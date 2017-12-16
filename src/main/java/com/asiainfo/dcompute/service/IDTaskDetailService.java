@@ -14,17 +14,9 @@ import com.asiainfo.dcompute.model.Task;
 public interface IDTaskDetailService {
     
     /**
-     * 查询所有待执行的任务，包含已分配未执行完成的任务
+     * 查询所有待调度的任务，包含已分配未执行完成的任务
      * 
      * @return
      */
     List<Task> queryScheduleTask();
-    
-    /**
-     * 查询任务详情
-     * 
-     * @param taskId
-     * @return
-     */
-    Task queryByTaskId(String taskId);
 }

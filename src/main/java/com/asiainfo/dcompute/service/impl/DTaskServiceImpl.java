@@ -8,8 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import com.asiainfo.biapp.mcd.redis.IRedisService;
 import com.asiainfo.dcompute.model.Task;
+import com.asiainfo.dcompute.service.IDExecutor;
+import com.asiainfo.dcompute.service.IDManagerService;
 import com.asiainfo.dcompute.service.IDTaskDetailService;
 import com.asiainfo.dcompute.service.IDTaskService;
 import com.asiainfo.dcompute.util.DComputeCodes;
@@ -25,63 +26,49 @@ import com.asiainfo.dcompute.util.DComputeCodes;
 public class DTaskServiceImpl implements IDTaskService {
 
     @Autowired
-    private IRedisService redis;
+    private IDManagerService manager;
     @Autowired
     private IDTaskDetailService detail;
+    private List<IDExecutor> executors;
+    @Autowired
+    public void setExecutors(List<IDExecutor> executors) {
+        this.executors = executors;
+    }
 
     /* 
      * TODO
+     * @param task
      * @return
-     * @see com.asiainfo.dcompute.service.ITaskService#getExecuteTask()
+     * @see com.asiainfo.dcompute.service.IDTaskService#getExecutor(com.asiainfo.dcompute.model.Task)
      */
     @Override
-    public List<Task> getExecuteTask() {
+    public IDExecutor getExecutor(Task task) {
+        
+        for (IDExecutor executor : this.executors) {
+            if (executor.isTaskExecutor(task)) {
+                return executor;
+            }
+        }
+        return (null == this.executors || this.executors.isEmpty()) ? null : this.executors.get(0);
+    }
+    
+    /* 
+     * TODO
+     * @return
+     * @see com.asiainfo.dcompute.service.ITaskService#getScheduleTask()
+     */
+    @Override
+    public List<Task> getScheduleTask() {
 
         List<Task> result = new ArrayList<>();
         List<Task> list = this.detail.queryScheduleTask();
         for (Task task : list)  {
             // 任务执行锁不为空，表示上次调度还未执行完成
-            String lockId = this.redis.getString(DComputeCodes.DISTRIBUTE_COMPUTE_TASK_PREFIX + task.getTaskId());
-            if (StringUtils.isEmpty(lockId)) {
+            if (!this.manager.existLock(DComputeCodes.DISTRIBUTE_COMPUTE_TASK_PREFIX + task.getTaskId())) {
                 result.add(task);
             }
         }
         return result;
-    }
-
-    /* 
-     * TODO
-     * @param task
-     * @param expire
-     * @param unit
-     * @return
-     * @see com.asiainfo.dcompute.service.ITaskService#setExecuteLock(com.asiainfo.dcompute.model.Task, long, java.util.concurrent.TimeUnit)
-     */
-    @Override
-    public String setExecuteLock(Task task, long expire, TimeUnit unit) {
-        return this.redis.acquireLock(DComputeCodes.DISTRIBUTE_COMPUTE_TASK_PREFIX + task.getTaskId(), unit.toSeconds(expire));
-    }
-
-    /* 
-     * TODO
-     * @param task
-     * @param expire
-     * @param unit
-     * @see com.asiainfo.dcompute.service.IDTaskService#expireTask(com.asiainfo.dcompute.model.Task, long, java.util.concurrent.TimeUnit)
-     */
-    @Override
-    public void expireTask(Task task, long expire, TimeUnit unit) {
-        this.redis.expire(DComputeCodes.DISTRIBUTE_COMPUTE_TASK_PREFIX + task.getTaskId(), unit.toSeconds(expire));
-    }
-    
-    /* 
-     * TODO
-     * @param task
-     * @see com.asiainfo.dcompute.service.IDTaskService#postExecuteTask(com.asiainfo.dcompute.model.Task)
-     */
-    @Override
-    public void postExecuteTask(Task task) {
-        this.redis.releaseLock(DComputeCodes.DISTRIBUTE_COMPUTE_TASK_PREFIX + task.getTaskId(), task.getLockId());
     }
 
     /* 
@@ -94,22 +81,41 @@ public class DTaskServiceImpl implements IDTaskService {
     public List<Task> getExecuteTask(String serverId) {
         
         List<Task> result = new ArrayList<>();
-        @SuppressWarnings("unchecked")
-        List<Task> list = (List<Task>) this.redis.getObject(DComputeCodes.DISTRIBUTE_COMPUTE_SERVER_PREFIX + serverId);
-        list = null == list ? new ArrayList<Task>() : list;
+        List<Task> list = this.manager.getTaskList(serverId);
         for (Task task : list) {
-            Object currentLock = this.redis.getObject(DComputeCodes.DISTRIBUTE_COMPUTE_TASK_PREFIX + task.getTaskId());
+            String currentLock = this.manager.getLock(DComputeCodes.DISTRIBUTE_COMPUTE_TASK_PREFIX + task.getTaskId());
             if (!StringUtils.isEmpty(currentLock) 
                     && currentLock.equals(task.getLockId())
                     && serverId.equals(task.getServerId())) {
                 result.add(task);
             }
         }
-        //读取后直接删除服务器任务列表
-        this.redis.remove(DComputeCodes.DISTRIBUTE_COMPUTE_SERVER_PREFIX + serverId);
         return result;
     }
+    
+    /* 
+     * TODO
+     * @param task
+     * @param expire
+     * @param unit
+     * @return
+     * @see com.asiainfo.dcompute.service.ITaskService#setExecuteLock(com.asiainfo.dcompute.model.Task, long, java.util.concurrent.TimeUnit)
+     */
+    @Override
+    public String setExecuteLock(Task task, long expire, TimeUnit unit) {
+        return this.manager.acquireLock(DComputeCodes.DISTRIBUTE_COMPUTE_TASK_PREFIX + task.getTaskId(), expire, unit);
+    }
 
+    /* 
+     * TODO
+     * @param serverId
+     * @see com.asiainfo.dcompute.service.IDTaskService#preServerTask(java.lang.String)
+     */
+    @Override
+    public void preServerTask(String serverId) {
+        this.manager.expireLock(DComputeCodes.DISTRIBUTE_COMPUTE_SERVER_PREFIX + serverId, null, 5, TimeUnit.MINUTES);
+    }
+    
     /* 
      * TODO
      * @param serverId
@@ -117,6 +123,29 @@ public class DTaskServiceImpl implements IDTaskService {
      */
     @Override
     public void postSeverTask(String serverId) {
-        //this.redis.remove(DComputeCodes.DISTRIBUTE_COMPUTE_SERVER_PREFIX + serverId);
+        this.manager.removeServerTask(serverId);
+    }
+
+    /* 
+     * TODO
+     * @param task
+     * @see com.asiainfo.dcompute.service.IDTaskService#preTask(com.asiainfo.dcompute.model.Task)
+     */
+    @Override
+    public void preTask(Task task) {
+        
+        IDExecutor executor = this.getExecutor(task);
+        this.manager.expireLock(DComputeCodes.DISTRIBUTE_COMPUTE_TASK_PREFIX + task.getTaskId(), task.getLockId(), 
+                executor.getExecuteTime(task), TimeUnit.SECONDS);
+    }
+
+    /* 
+     * TODO
+     * @param task
+     * @see com.asiainfo.dcompute.service.IDTaskService#postTask(com.asiainfo.dcompute.model.Task)
+     */
+    @Override
+    public void postTask(Task task) {
+        this.manager.releaseLock(DComputeCodes.DISTRIBUTE_COMPUTE_TASK_PREFIX + task.getTaskId(), task.getLockId());
     }
 }

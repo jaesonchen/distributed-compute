@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import com.asiainfo.dcompute.model.Task;
 import com.asiainfo.dcompute.service.IDTaskDetailService;
@@ -37,23 +36,5 @@ public class DTaskDetailServiceImpl implements IDTaskDetailService {
                 new Task("10006", "task 10006", 3),
                 new Task("10007", "task 10007", 4),
                 new Task("10008", "task 10008", 4),}));
-    }
-
-    /* 
-     * TODO
-     * @param taskId
-     * @return
-     * @see com.asiainfo.dcompute.service.IDTaskDetailService#queryByTaskId(java.lang.String)
-     */
-    @Override
-    public Task queryByTaskId(String taskId) {
-
-        List<Task> tasks = this.queryScheduleTask();
-        for (Task task : tasks) {
-            if (!StringUtils.isEmpty(taskId) && taskId.equals(task.getTaskId())) {
-                return task;
-            }
-        }
-        return null;
     }
 }

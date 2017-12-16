@@ -21,6 +21,8 @@ public class Task implements Serializable {
     private int type;
     private String lockId;
     private String serverId;
+    private int resultCode;
+    private String resultDesc;
     private Map<String, Object> detail = new HashMap<>();
     
     public Task() {}
@@ -59,6 +61,18 @@ public class Task implements Serializable {
     public void setServerId(String serverId) {
         this.serverId = serverId;
     }
+    public int getResultCode() {
+        return resultCode;
+    }
+    public void setResultCode(int resultCode) {
+        this.resultCode = resultCode;
+    }
+    public String getResultDesc() {
+        return resultDesc;
+    }
+    public void setResultDesc(String resultDesc) {
+        this.resultDesc = resultDesc;
+    }
     public Map<String, Object> getDetail() {
         return detail;
     }
@@ -68,6 +82,6 @@ public class Task implements Serializable {
     @Override
     public String toString() {
         return "Task [taskId=" + taskId + ", desc=" + desc + ", type=" + type + ", lockId=" + lockId + ", serverId="
-                + serverId + ", detail=" + detail + "]";
+                + serverId + ", resultCode=" + resultCode + ", resultDesc=" + resultDesc + ", detail=" + detail + "]";
     }
 }

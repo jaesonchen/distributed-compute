@@ -15,11 +15,19 @@ import com.asiainfo.dcompute.model.Task;
 public interface IDTaskService {
     
     /**
-     * 返回可执行任务，不包含正在执行的任务，判断依据是task的锁是否释放
+     * 任务执行器
+     * 
+     * @param task
+     * @return
+     */
+    IDExecutor getExecutor(Task task);
+    
+    /**
+     * 返回可调度任务，不包含正在执行的任务
      * 
      * @return
      */
-    List<Task> getExecuteTask();
+    List<Task> getScheduleTask();
     
     /**
      * 服务器分配到的可执行任务
@@ -40,23 +48,28 @@ public interface IDTaskService {
     String setExecuteLock(Task task, long expire, TimeUnit unit);
     
     /**
-     * 设置任务执行锁过期时间
-     * 
-     * @param task
-     * @param expire
-     * @param unit
-     */
-    void expireTask(Task task, long expire, TimeUnit unit);
-    
-    /**
-     * 任务执行后处理
+     * 任务预处理
      * 
      * @param task
      */
-    void postExecuteTask(Task task);
+    void preTask(Task task);
     
     /**
-     * 服务器任务列表后处理
+     * 任务后处理
+     * 
+     * @param task
+     */
+    void postTask(Task task);
+    
+    /**
+     * 服务器任务预处理
+     * 
+     * @param serverId
+     */
+    void preServerTask(String serverId);
+    
+    /**
+     * 服务器任务后处理
      * 
      * @param serverId
      */
