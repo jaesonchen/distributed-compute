@@ -54,7 +54,6 @@ public class DispatcherTask implements Runnable {
             LOGGER.info("服务器({}) 分配到{}个待执行任务！", this.serverId, list.size());
             //任务分发
             for (Task task : list) {
-                this.service.preTask(task);
                 executor.execute(new ExecutorTask(this.serverId, this.service, task));
             }
             LOGGER.info("服务器({}) 任务分发完成！", this.serverId);

@@ -37,6 +37,8 @@ public class ExecutorTask implements Runnable {
 
         Thread.currentThread().setName("服务器(" + this.serverId + ")任务(" + this.task.getTaskId() + ")运行线程");
         try {
+            //任务预执行
+            this.service.preTask(task);
             //获取执行器
             IDExecutor executor = this.service.getExecutor(this.task);
             //运行任务
@@ -46,6 +48,7 @@ public class ExecutorTask implements Runnable {
             LOGGER.error("服务器({}) 运行任务({})时出现异常。\n{}", this.serverId, this.task.getTaskId(), ex);
         } finally {
             LOGGER.info("服务器({})任务({})退出，进行任务后处理！", this.serverId, this.task.getTaskId());
+            //任务后处理
             this.service.postTask(this.task);
         }
     }
