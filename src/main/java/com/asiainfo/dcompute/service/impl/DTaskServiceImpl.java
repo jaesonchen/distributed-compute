@@ -68,6 +68,9 @@ public class DTaskServiceImpl implements IDTaskService {
                 result.add(task);
             }
         }
+        // 防止查询任务时未完成，遍历锁时任务执行完成
+        List<Task> deleteDup = this.detail.queryScheduleTask();
+        result.retainAll(deleteDup);
         return result;
     }
 
@@ -135,8 +138,11 @@ public class DTaskServiceImpl implements IDTaskService {
     public void preTask(Task task) {
         
         IDExecutor executor = this.getExecutor(task);
-        this.manager.expireLock(DComputeCodes.DISTRIBUTE_COMPUTE_TASK_PREFIX + task.getTaskId(), task.getLockId(), 
-                executor.getExecuteTime(task), TimeUnit.SECONDS);
+        boolean expire = this.manager.expireLock(DComputeCodes.DISTRIBUTE_COMPUTE_TASK_PREFIX + task.getTaskId(), 
+                task.getLockId(), executor.getExecuteTime(task), TimeUnit.SECONDS);
+        if (!expire) {
+            throw new RuntimeException("task(" + task.getTaskId() + ") expired!");
+        }
     }
 
     /* 

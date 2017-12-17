@@ -92,7 +92,7 @@ public class ManagerTask implements Runnable {
                 }
             }
             //任务分配
-            this.manager.dispatcher(scheduleMap, 2, TimeUnit.MINUTES);
+            this.manager.dispatcher(scheduleMap, 5, TimeUnit.MINUTES);
             LOGGER.info("服务器({})任务调度完成, 任务调度结果:{}", this.serverId, scheduleMap);
         } catch (Exception ex) {
             LOGGER.error("服务器({})执行任务调度时出现异常！\n{}", this.serverId, ex);

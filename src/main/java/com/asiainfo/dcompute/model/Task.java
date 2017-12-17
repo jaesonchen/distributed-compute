@@ -80,6 +80,27 @@ public class Task implements Serializable {
         this.detail = detail;
     }
     @Override
+    public boolean equals(Object obj) {
+        
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof Task)) {
+            return false;
+        }
+        Task target = (Task) obj;
+        return this.type == target.type && this.taskId.equals(target.taskId);
+    }
+    @Override
+    public int hashCode() {
+        
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((taskId == null) ? 0 : taskId.hashCode());
+        result = prime * result + type;
+        return result;
+    }
+    @Override
     public String toString() {
         return "Task [taskId=" + taskId + ", desc=" + desc + ", type=" + type + ", lockId=" + lockId + ", serverId="
                 + serverId + ", resultCode=" + resultCode + ", resultDesc=" + resultDesc + ", detail=" + detail + "]";

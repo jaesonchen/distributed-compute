@@ -39,10 +39,11 @@ public class ExecutorTask implements Runnable {
         try {
             //任务预执行
             this.service.preTask(task);
+            LOGGER.info("服务器({}) 开始运行任务({})！", this.serverId, this.task.getTaskId());
             //获取执行器
             IDExecutor executor = this.service.getExecutor(this.task);
             //运行任务
-            LOGGER.info("服务器({})任务({})完成，运行结果：{}", this.serverId, this.task.getTaskId(), 
+            LOGGER.info("服务器({}) 运行任务({})完成，运行结果：{}", this.serverId, this.task.getTaskId(), 
                     executor.executor(this.serverId, this.task));
         } catch (Exception ex) {
             LOGGER.error("服务器({}) 运行任务({})时出现异常。\n{}", this.serverId, this.task.getTaskId(), ex);
